@@ -13,19 +13,40 @@ export async function POST(req: NextRequest) {
     }
 
     const prompt = `
-You are a helpful home cooking assistant.
+You are an AI cooking masterchef.
 
 The user has these ingredients:
 ${ingredients}
 
-Suggest 3 simple dishes they can cook at home.
+Return ONLY valid JSON.
+Do not include markdown.
+Do not include explanation before or after the JSON.
 
-For each dish, provide:
-1. Dish name
-2. Short description
-3. Simple step-by-step instructions
+Return this exact shape:
+{
+  "recipes": [
+    {
+      "name": "string",
+      "description": "string",
+      "time": number,
+      "servings": number,
+      "matchPercent": number,
+      "missingIngredients": number,
+      "imageEmoji": "string",
+      "ingredientsNeeded": ["string"],
+      "steps": ["string"]
+    }
+  ]
+}
 
-Keep it practical and realistic.
+Requirements:
+- Return exactly 6 recipes
+- Make recipes realistic for a normal home cook
+- matchPercent should be between 0 and 100
+- missingIngredients should be a non-negative integer
+- imageEmoji should be one food-related emoji
+- Keep description short
+- Keep steps concise
 `;
 
     const response = await openai.responses.create({
@@ -33,11 +54,13 @@ Keep it practical and realistic.
       input: prompt,
     });
 
-    return NextResponse.json({
-      result: response.output_text,
-    });
+    const text = response.output_text;
+    const parsed = JSON.parse(text);
+
+    return NextResponse.json(parsed);
   } catch (error) {
     console.error("API ERROR:", error);
+
     return NextResponse.json(
       { error: "Failed to generate recipes." },
       { status: 500 }
